@@ -7,6 +7,8 @@ const AuthContext = createContext({
   signInUser: async () => {},
   signUpNewUser: async () => {},
   signOut: async () => {},
+  resetPassword: async () => {},
+  updatePassword: async () => {}, 
 });
 
 export const AuthContextProvider = ({ children }) => {
@@ -46,6 +48,23 @@ export const AuthContextProvider = ({ children }) => {
     return error ? { success: false, error: error.message } : { success: true, data };
   };
 
+  const resetPassword = async (email) => {
+  const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/update-password`,
+  });
+  return error ? { success: false, error: error.message } : { success: true, data };
+};
+
+
+const updatePassword = async (newPassword) => {
+  if (!validatePassword(newPassword)) return { success: false, error: "Weak password." };
+
+  const { data, error } = await supabaseClient.auth.updateUser({
+    password: newPassword
+  });
+  return error ? { success: false, error: error.message } : { success: true, data };
+};
+
 
 const signOut = async () => {
   try {
@@ -80,6 +99,8 @@ const signOut = async () => {
       loading,
       signInUser,
       signUpNewUser,
+      resetPassword,
+      updatePassword,
       signOut,
     }),
     [session, loading]
