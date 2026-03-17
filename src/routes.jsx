@@ -9,6 +9,7 @@ import Book from "./pages/Book";
 import TutorDetail from "./pages/TutorDetail";
 import Welcome from "./pages/Welcome";
 import UpdatePassword from "./pages/UpdatePassword";
+import ForgotPassword from "./pages/ForgotPassword";
 
 export const router = createBrowserRouter([
   {
@@ -22,7 +23,8 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <Dashboard /> },
       { path: "book/:id", element: <Book /> },
       { path: "tutor/:id", element: <TutorDetail /> },
-      { path: "forgot-password", element: <UpdatePassword /> }
+      { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "update-password", element: <UpdatePassword /> },
     ],
   },
 ]);
