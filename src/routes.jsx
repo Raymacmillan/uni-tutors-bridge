@@ -22,7 +22,7 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <Dashboard /> },
       { path: "book/:id", element: <Book /> },
       { path: "tutor/:id", element: <TutorDetail /> },
-      { path: "update-password", element: <UpdatePassword /> }
+      { path: "forgot-password", element: <UpdatePassword /> }
     ],
   },
 ]);

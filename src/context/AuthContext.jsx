@@ -1,110 +1,97 @@
-import { useContext, useState, createContext, useEffect } from "react";
+import { useContext, useState, createContext, useEffect, useMemo } from "react"; 
 import { supabaseClient } from "../config/supabaseClient";
 
-const AuthContext = createContext();
+const AuthContext = createContext({
+  session: null,
+  loading: true,
+  signInUser: async () => {},
+  signUpNewUser: async () => {},
+  signOut: async () => {},
+});
 
 export const AuthContextProvider = ({ children }) => {
-  const [session, setSession] = useState(undefined);
-  const [loading, setLoading] = useState(false);
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const validatePassword = (password) => {
-    const regex =
-      /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/-]).{8,}$/;
+    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/-]).{8,}$/;
     return regex.test(password);
   };
 
-  const validateEmail = (email) => {
-    return /\S+@\S+\.\S+/.test(email);
-  };
+  const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
 
   const signUpNewUser = async (email, password, metadata) => {
-    if (!validateEmail(email)) {
-      return { success: false, error: "Please enter a valid email address." };
-    }
+    if (!validateEmail(email)) return { success: false, error: "Invalid email." };
+    if (!validatePassword(password)) return { success: false, error: "Weak password." };
 
-    if (!validatePassword(password)) {
-      return {
-        success: false,
-        error:
-          "Password must be 8+ chars, have an uppercase, a number, and a symbol.",
-      };
-    }
     const { data, error } = await supabaseClient.auth.signUp({
-      email: email,
-      password: password,
-      options: { 
-        data: metadata,
-        emailRedirectTo: `${window.location.origin}/welcome` },
-    });
-
-    return error
-      ? { success: false, error: error.message }
-      : { success: true, data };
-  };
-
-  const signInWithSocial = async (provider) => {
-    const { data, error } = await supabaseClient.auth.signInWithOAuth({
-      provider: provider,
+      email,
+      password,
       options: {
-        redirectTo: window.location.origin,
+        data: metadata,
+        emailRedirectTo: `${window.location.origin}/welcome`,
       },
     });
-    return error
-      ? { success: false, error: error.message }
-      : { success: true, data };
-  };
 
-  const resetPassword = async (email) => {
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
-    });
-    return error ? { success: false, error: error.message } : { success: true };
+    return error ? { success: false, error: error.message } : { success: true, data };
   };
 
   const signInUser = async (email, password) => {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return error
-      ? { success: false, error: error.message }
-      : { success: true, data };
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (!error && data.session) {
+      setSession(data.session);
+    }
+
+    return error ? { success: false, error: error.message } : { success: true, data };
   };
 
+
+const signOut = async () => {
+  try {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    console.error("Sign out error:", error.message);
+    throw error; 
+  }
+};
+
   useEffect(() => {
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
       setSession(session);
       setLoading(false);
-    });
+    };
 
-    const {
-      data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+    getInitialSession();
+
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = () => {
-    const { error } = supabaseClient.auth.signOut();
+  const value = useMemo(
+    () => ({
+      session,
+      loading,
+      signInUser,
+      signUpNewUser,
+      signOut,
+    }),
+    [session, loading]
+  );
 
-    if (error) {
-      console.error("An error occured: ", error);
-    }
-  };
-
-  const value = {
-    session,
-    loading,
-    signInUser,
-    signUpNewUser,
-    signInWithSocial,
-    resetPassword,
-    signOut,
-  };
-
-  return <AuthContext value={value}>{!loading && children}</AuthContext>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const UserAuth = () => useContext(AuthContext);
+export const UserAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("UserAuth must be used within an AuthContextProvider");
+  }
+  return context;
+};
