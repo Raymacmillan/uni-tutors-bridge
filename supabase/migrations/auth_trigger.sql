@@ -1,19 +1,15 @@
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, student_id, role, whatsapp_number)
+  INSERT INTO public.profiles (id, full_name, student_id, role, whatsapp_number, bio)
   VALUES (
     new.id, 
-    new.raw_user_meta_data->>'full_name', 
-    new.raw_user_meta_data->>'student_id',
-    new.raw_user_meta_data->>'role',
-    new.raw_user_meta_data->>'whatsapp_number'
+    COALESCE(new.raw_user_meta_data->>'full_name', 'User_' || substring(new.id::text, 1, 5)), 
+    COALESCE(new.raw_user_meta_data->>'student_id', 'TMP_' || substring(new.id::text, 1, 8)),
+    COALESCE(new.raw_user_meta_data->>'role', 'student'),
+    new.raw_user_meta_data->>'whatsapp_number',
+    'Student at University of Botswana'
   );
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 2. Create the Trigger that watches the Auth table
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
