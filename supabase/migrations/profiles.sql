@@ -26,3 +26,6 @@ ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can delete own profile" 
 ON profiles FOR DELETE USING (auth.uid() = id);
+
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS bio text;

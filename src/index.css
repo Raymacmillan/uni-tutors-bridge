@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #003366;    /* Deep UB Navy */
+  --color-secondary: #00aeef;  /* Sky Blue (Use for small accents/icons) */
+  --color-accent: #a51c30;     /* Harvard/UB Crimson Red (Professional & Deep) */
+  --color-surface: #fdfdfd;    /* Clean White */
+  --color-muted: #64748b;      /* Slate Grey for less important text */
+}
